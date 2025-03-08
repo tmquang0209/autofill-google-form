@@ -1,5 +1,7 @@
 import puppeteer, { Browser, ElementHandle, Page } from "puppeteer";
 
+const nextTranslate:string[] = ["Tiếp", "Next"];
+
 async function timeout(ms: number = 5000) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -17,13 +19,12 @@ async function clickNextButton(page: Page): Promise<void> {
     const nextButtons = await page.$$("span.NPEfkd.RveJvd.snByac");
     for (let button of nextButtons) {
         const text = await button.evaluate((el) => el.textContent);
-        if (text?.trim() === "Next") {
-            // Change "Tiếp" to "Next" if necessary
+        if (nextTranslate.includes(text?.trim() || "")) {
             await button.evaluate((el) => el.scrollIntoView({ behavior: "smooth", block: "center" }));
             await timeout(500);
             await button.click();
 
-            await timeout(2000);
+            await timeout(1000);
             break;
         }
     }

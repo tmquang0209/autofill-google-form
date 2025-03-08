@@ -1,0 +1,19 @@
+{
+  "name": "Google-Form",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "repository": "https://github.com/tmquang0209/autofill-google-form.git",
+  "author": "Trần Minh Quang <tmquang0209@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "ts-node index.ts"
+  },
+  "dependencies": {
+    "puppeteer": "^24.4.0"
+  },
+  "devDependencies": {
+    "@types/puppeteer": "^7.0.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  }
+}
