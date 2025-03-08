@@ -1,7 +1,19 @@
 import puppeteer, { Browser, ElementHandle, Page } from "puppeteer";
 
+interface Question {
+    question: string;
+    answers: string[];
+}
+
 const nextTranslate: string[] = ["Tiếp", "Next"];
 const formUrl: string = "";
+
+const specialQuestions: Question[] = [
+    {
+        question: "What is your preferred mode of transportation?",
+        answers: ["Car", "Bike", "Public Transport", "Walking"],
+    },
+];
 
 async function timeout(ms: number = 5000) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -42,13 +54,45 @@ async function answerQuestions(page: Page): Promise<void> {
             }
 
             const questionText: string | null = await questionHeading.evaluate((el) => el.textContent);
-            console.log("Question:", questionText);
+            const cleanQuestion = questionText?.replace("*", "").trim();
+            console.log("Question:", cleanQuestion);
+
+            if (specialQuestions.some((q) => q.question === cleanQuestion)) {
+                console.log("🔥 Special question detected!");
+                const specialQuestion = specialQuestions.find((q) => q.question === cleanQuestion);
+                if (specialQuestion) {
+                    await answerSpecialQuestions(page, specialQuestion.answers);
+                    continue;
+                }
+            }
 
             await answerMultipleChoice(question);
             await answerCheckboxes(question);
             // await answerInputs(question);
         } catch (error) {
             console.error("❌ Error processing question:", error);
+        }
+    }
+}
+
+async function answerSpecialQuestions(page: Page, answersTarget: string[]): Promise<void> {
+    const presentations = await page.$$("span[role='presentation']");
+    for (let presentation of presentations) {
+        const randomIndex = Math.floor(Math.random() * answersTarget.length);
+        const selectedAnswer = answersTarget[randomIndex];
+        console.log("Selected Answer:", selectedAnswer);
+
+        // div[role='radio'] has data-value attribute to match the answer
+        const answers = await presentation.$$("div[role='radio']");
+        for (let answer of answers) {
+            const optionValue = await answer.evaluate((el) => el.getAttribute("data-value"));
+            if (optionValue === selectedAnswer) {
+                await answer.evaluate((el) => el.scrollIntoView({ behavior: "smooth", block: "center" }));
+                await timeout(500);
+                await answer.click();
+                console.log("✅ Answer clicked:", selectedAnswer);
+                break;
+            }
         }
     }
 }
@@ -132,22 +176,32 @@ async function submitForm(page: Page): Promise<void> {
 }
 
 (async () => {
-    const browser = await launchBrowser();
-    const page = await browser.newPage();
-    page.on("console", (msg) => console.log("PAGE LOG:", msg.text()));
+    const times = 100;
 
-    await navigateToPage(page, formUrl);
+    for (let i = 1; i <= times; i++) {
+        const browser = await launchBrowser();
+        const page = await browser.newPage();
+        page.on("console", (msg) => console.log("PAGE LOG:", msg.text()));
 
-    await clickNextButton(page);
-    await answerQuestions(page);
-    await clickNextButton(page);
-    await answerQuestions(page);
-    await submitForm(page);
+        try {
+            await navigateToPage(page, formUrl);
 
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    const timestamp = new Date().getTime();
-    await page.screenshot({ path: `./screenshots/screenshot_${timestamp}.png` });
-    console.log("Screenshot saved as:", `screenshot_${timestamp}.png`);
+            await clickNextButton(page);
+            await answerQuestions(page);
+            await clickNextButton(page);
+            await answerQuestions(page);
+            await submitForm(page);
 
-    await browser.close();
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            const timestamp = new Date().getTime();
+            await page.screenshot({ path: `./screenshots/screenshot_${timestamp}.png` });
+            console.log("Screenshot saved as:", `screenshot_${timestamp}.png`);
+        } catch (error) {
+            console.error("Error during form processing:", error);
+        } finally {
+            await browser.close();
+            // clear cache
+            await timeout(1000);
+        }
+    }
 })();
