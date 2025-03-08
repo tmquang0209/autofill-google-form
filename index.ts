@@ -1,6 +1,7 @@
 import puppeteer, { Browser, ElementHandle, Page } from "puppeteer";
 
-const nextTranslate:string[] = ["Tiếp", "Next"];
+const nextTranslate: string[] = ["Tiếp", "Next"];
+const formUrl: string = "";
 
 async function timeout(ms: number = 5000) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -135,7 +136,7 @@ async function submitForm(page: Page): Promise<void> {
     const page = await browser.newPage();
     page.on("console", (msg) => console.log("PAGE LOG:", msg.text()));
 
-    await navigateToPage(page, "https://docs.google.com/forms/d/e/1FAIpQLSfC1TpodhtLhG9rou_amVHjMCqlF29p_z-5rvm13ieofqSZTQ/viewform");
+    await navigateToPage(page, formUrl);
 
     await clickNextButton(page);
     await answerQuestions(page);
